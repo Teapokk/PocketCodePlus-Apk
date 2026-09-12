@@ -1,0 +1,7 @@
+{
+  "name": "PocketCodePlus",
+  "description": "Visual programming environment mod with Newcatroid physics, camera follow, MQTT networking, AI blocks, syntax diagnostics, and .pcp / .catrobat support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
