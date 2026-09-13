@@ -146,5 +146,6 @@ data class Project(
   val backgroundHex: String = "#0F172A",
   val objects: List<ProgramObject> = emptyList(),
   val variables: Map<String, Float> = mapOf("score" to 0f),
-  val isPreset: Boolean = false
+  val isPreset: Boolean = false,
+  val mqttConfig: MqttConfig = MqttConfig()
 )

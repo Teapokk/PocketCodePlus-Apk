@@ -185,4 +185,9 @@ class ProjectRepository(private val context: Context? = null) {
     val updatedObj = obj.copy(looks = obj.looks.filterNot { it.id == lookId })
     updateProject(project.copy(objects = project.objects.map { if (it.id == objectId) updatedObj else it }))
   }
+
+  fun updateMqttConfig(projectId: String, config: com.example.model.MqttConfig) {
+    val project = getProject(projectId) ?: return
+    updateProject(project.copy(mqttConfig = config))
+  }
 }

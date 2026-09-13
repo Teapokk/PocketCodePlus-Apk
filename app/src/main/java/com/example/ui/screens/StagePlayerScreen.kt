@@ -77,7 +77,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.engine.RuntimeEngine
 import com.example.model.Project
-import com.example.repository.MqttConfigRepository
 import com.example.ui.theme.PocketAccentAmber
 import com.example.ui.theme.PocketTealPrimary
 import kotlin.math.roundToInt
@@ -90,17 +89,11 @@ fun StagePlayerScreen(
   onOpenMqttConfig: (() -> Unit)? = null
 ) {
   val context = LocalContext.current
-  val mqttRepository = remember { MqttConfigRepository.getInstance(context) }
-  val savedMqttConfig by mqttRepository.config.collectAsState()
 
   val engine = remember(project) {
     RuntimeEngine(project).apply {
-      activeMqttConfig = savedMqttConfig
+      activeMqttConfig = project.mqttConfig
     }
-  }
-
-  LaunchedEffect(savedMqttConfig) {
-    engine.activeMqttConfig = savedMqttConfig
   }
 
   var showGrid by remember { mutableStateOf(false) }

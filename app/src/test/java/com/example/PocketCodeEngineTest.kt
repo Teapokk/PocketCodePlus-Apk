@@ -132,44 +132,6 @@ class PocketCodeEngineTest {
   }
 
   @Test
-  fun testMqttConfigAndRepository() {
-    val context = org.robolectric.RuntimeEnvironment.getApplication()
-    val repo = com.example.repository.MqttConfigRepository(context)
-
-    // Check defaults
-    val initial = repo.config.value
-    assertEquals("broker.emqx.io", initial.host)
-    assertEquals(1883, initial.port)
-    assertEquals(false, initial.hasAuth)
-    assertEquals("tcp://broker.emqx.io:1883", initial.uriString)
-
-    // Save custom configuration
-    val custom = com.example.model.MqttConfig(
-      host = "test.mosquitto.org",
-      port = 8883,
-      username = "developer",
-      password = "secret_password",
-      useSsl = true,
-      defaultTopic = "pocketcode/sensors/temp"
-    )
-    repo.saveConfig(custom)
-
-    val loaded = repo.config.value
-    assertEquals("test.mosquitto.org", loaded.host)
-    assertEquals(8883, loaded.port)
-    assertEquals("developer", loaded.username)
-    assertEquals("secret_password", loaded.password)
-    assertTrue("Should indicate auth is present", loaded.hasAuth)
-    assertTrue("Should be SSL", loaded.useSsl)
-    assertEquals("ssl://test.mosquitto.org:8883", loaded.uriString)
-
-    // Reset to defaults
-    val reset = repo.resetToDefaults()
-    assertEquals("broker.emqx.io", reset.host)
-    assertEquals(1883, reset.port)
-  }
-
-  @Test
   fun testRuntimeEngineWithCustomMqttConfig() = runBlocking {
     val testObj = ProgramObject(
       id = "network_actor",

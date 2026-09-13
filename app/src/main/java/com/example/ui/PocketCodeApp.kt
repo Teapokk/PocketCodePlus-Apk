@@ -28,7 +28,7 @@ sealed class NavScreen {
   data class ProjectOverview(val projectId: String) : NavScreen()
   data class ObjectEditor(val projectId: String, val objectId: String) : NavScreen()
   data class StagePlayer(val projectId: String) : NavScreen()
-  data class MqttConfig(val returnTo: NavScreen = ProjectsList) : NavScreen()
+  data class MqttConfig(val projectId: String, val returnTo: NavScreen) : NavScreen()
 }
 
 @Composable
@@ -36,7 +36,6 @@ fun PocketCodeApp(
   repository: ProjectRepository = remember { ProjectRepository() }
 ) {
   val context = LocalContext.current
-  val mqttRepository = remember { MqttConfigRepository.getInstance(context) }
   val projects by repository.projects.collectAsState()
   var currentScreen by remember { mutableStateOf<NavScreen>(NavScreen.ProjectsList) }
 
@@ -57,7 +56,7 @@ fun PocketCodeApp(
           onDuplicateProject = { id -> repository.duplicateProject(id) },
           onDeleteProject = { id -> repository.deleteProject(id) },
           onImportProject = { imported -> repository.importProject(imported) },
-          onOpenMqttConfig = { currentScreen = NavScreen.MqttConfig(currentScreen) }
+          onOpenMqttConfig = null
         )
       }
 
@@ -94,7 +93,7 @@ fun PocketCodeApp(
             actor = actor,
             onBack = { currentScreen = NavScreen.ProjectOverview(project.id) },
             onPlay = { currentScreen = NavScreen.StagePlayer(project.id) },
-            onOpenMqttConfig = { currentScreen = NavScreen.MqttConfig(currentScreen) },
+            onOpenMqttConfig = { currentScreen = NavScreen.MqttConfig(project.id, currentScreen) },
             onAddScript = { headerOp ->
               repository.addScript(project.id, actor.id, headerOp)
             },
@@ -129,7 +128,7 @@ fun PocketCodeApp(
           StagePlayerScreen(
             project = project,
             onBack = { currentScreen = NavScreen.ProjectOverview(project.id) },
-            onOpenMqttConfig = { currentScreen = NavScreen.MqttConfig(currentScreen) }
+            onOpenMqttConfig = { currentScreen = NavScreen.MqttConfig(project.id, currentScreen) }
           )
         } else {
           currentScreen = NavScreen.ProjectsList
@@ -138,10 +137,18 @@ fun PocketCodeApp(
 
       is NavScreen.MqttConfig -> {
         BackHandler { currentScreen = screen.returnTo }
-        MqttConfigScreen(
-          repository = mqttRepository,
-          onBack = { currentScreen = screen.returnTo }
-        )
+        val project = projects.find { it.id == screen.projectId }
+        if (project != null) {
+          MqttConfigScreen(
+            initialConfig = project.mqttConfig,
+            onBack = { currentScreen = screen.returnTo },
+            onConfigSaved = { newCfg ->
+              repository.updateMqttConfig(project.id, newCfg)
+            }
+          )
+        } else {
+          currentScreen = NavScreen.ProjectsList
+        }
       }
     }
   }

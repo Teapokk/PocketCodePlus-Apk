@@ -62,45 +62,45 @@ class MqttConfigRepository(private val context: Context) {
     return defaultCfg
   }
 
-  suspend fun testBrokerConnection(config: MqttConfig): ConnectionTestResult {
-    return withContext(Dispatchers.IO) {
-      val host = config.host.trim()
-      val port = config.port
+  companion object {
+    suspend fun testBrokerConnection(config: MqttConfig): ConnectionTestResult {
+      return withContext(Dispatchers.IO) {
+        val host = config.host.trim()
+        val port = config.port
 
-      if (host.isBlank()) {
-        return@withContext ConnectionTestResult.Failure("Host address cannot be blank.")
-      }
-      if (port !in 1..65535) {
-        return@withContext ConnectionTestResult.Failure("Port must be between 1 and 65535.")
-      }
-
-      val startTime = System.currentTimeMillis()
-      val socket = Socket()
-      try {
-        val socketAddress = InetSocketAddress(host, port)
-        socket.connect(socketAddress, 4000)
-        val latency = System.currentTimeMillis() - startTime
-        socket.close()
-
-        val authInfo = if (config.hasAuth) {
-          "Authenticated as '${config.username}'"
-        } else {
-          "Anonymous access"
+        if (host.isBlank()) {
+          return@withContext ConnectionTestResult.Failure("Host address cannot be blank.")
         }
-        ConnectionTestResult.Success(
-          latencyMs = latency,
-          message = "Successfully reached $host:$port in ${latency}ms ($authInfo)."
-        )
-      } catch (e: Exception) {
+        if (port !in 1..65535) {
+          return@withContext ConnectionTestResult.Failure("Port must be between 1 and 65535.")
+        }
+
+        val startTime = System.currentTimeMillis()
+        val socket = Socket()
         try {
+          val socketAddress = InetSocketAddress(host, port)
+          socket.connect(socketAddress, 4000)
+          val latency = System.currentTimeMillis() - startTime
           socket.close()
-        } catch (_: Exception) {}
-        ConnectionTestResult.Failure("Connection failed: ${e.localizedMessage ?: e.javaClass.simpleName}")
+
+          val authInfo = if (config.hasAuth) {
+            "Authenticated as '${config.username}'"
+          } else {
+            "Anonymous access"
+          }
+          ConnectionTestResult.Success(
+            latencyMs = latency,
+            message = "Successfully reached $host:$port in ${latency}ms ($authInfo)."
+          )
+        } catch (e: Exception) {
+          try {
+            socket.close()
+          } catch (_: Exception) {}
+          ConnectionTestResult.Failure("Connection failed: ${e.localizedMessage ?: e.javaClass.simpleName}")
+        }
       }
     }
-  }
 
-  companion object {
     private const val PREFS_NAME = "pocket_code_mqtt_settings"
     private const val KEY_HOST = "mqtt_host"
     private const val KEY_PORT = "mqtt_port"

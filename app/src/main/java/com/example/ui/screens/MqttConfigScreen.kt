@@ -90,22 +90,21 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun MqttConfigScreen(
-  repository: MqttConfigRepository,
+  initialConfig: MqttConfig,
   onBack: () -> Unit,
-  onConfigSaved: ((MqttConfig) -> Unit)? = null
+  onConfigSaved: (MqttConfig) -> Unit
 ) {
   val context = LocalContext.current
   val coroutineScope = rememberCoroutineScope()
-  val savedConfig by repository.config.collectAsState()
-
+  
   // Form editable states
-  var host by remember(savedConfig) { mutableStateOf(savedConfig.host) }
-  var portText by remember(savedConfig) { mutableStateOf(savedConfig.port.toString()) }
-  var username by remember(savedConfig) { mutableStateOf(savedConfig.username) }
-  var password by remember(savedConfig) { mutableStateOf(savedConfig.password) }
-  var clientId by remember(savedConfig) { mutableStateOf(savedConfig.clientId) }
-  var useSsl by remember(savedConfig) { mutableStateOf(savedConfig.useSsl) }
-  var defaultTopic by remember(savedConfig) { mutableStateOf(savedConfig.defaultTopic) }
+  var host by remember(initialConfig) { mutableStateOf(initialConfig.host) }
+  var portText by remember(initialConfig) { mutableStateOf(initialConfig.port.toString()) }
+  var username by remember(initialConfig) { mutableStateOf(initialConfig.username) }
+  var password by remember(initialConfig) { mutableStateOf(initialConfig.password) }
+  var clientId by remember(initialConfig) { mutableStateOf(initialConfig.clientId) }
+  var useSsl by remember(initialConfig) { mutableStateOf(initialConfig.useSsl) }
+  var defaultTopic by remember(initialConfig) { mutableStateOf(initialConfig.defaultTopic) }
 
   var passwordVisible by remember { mutableStateOf(false) }
   var isTestingConnection by remember { mutableStateOf(false) }
@@ -163,7 +162,7 @@ fun MqttConfigScreen(
         actions = {
           IconButton(
             onClick = {
-              val def = repository.resetToDefaults()
+              val def = MqttConfig()
               host = def.host
               portText = def.port.toString()
               username = def.username
@@ -234,14 +233,14 @@ fun MqttConfigScreen(
               letterSpacing = 1.sp
             )
             Text(
-              text = savedConfig.uriString,
+              text = initialConfig.uriString,
               fontSize = 16.sp,
               fontWeight = FontWeight.Bold,
               fontFamily = FontFamily.Monospace,
               color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-              text = if (savedConfig.hasAuth) "Authenticated (${savedConfig.username})" else "Anonymous (No auth)",
+              text = if (initialConfig.hasAuth) "Authenticated (${initialConfig.username})" else "Anonymous (No auth)",
               fontSize = 12.sp,
               color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -615,7 +614,7 @@ fun MqttConfigScreen(
             val configToTest = buildCurrentConfig()
             isTestingConnection = true
             coroutineScope.launch {
-              val result = repository.testBrokerConnection(configToTest)
+              val result = MqttConfigRepository.testBrokerConnection(configToTest)
               testResult = result
               isTestingConnection = false
             }
@@ -645,8 +644,7 @@ fun MqttConfigScreen(
               return@Button
             }
             val newCfg = buildCurrentConfig()
-            repository.saveConfig(newCfg)
-            onConfigSaved?.invoke(newCfg)
+            onConfigSaved.invoke(newCfg)
             Toast.makeText(context, "MQTT Broker configuration saved!", Toast.LENGTH_SHORT).show()
           },
           enabled = canSave,

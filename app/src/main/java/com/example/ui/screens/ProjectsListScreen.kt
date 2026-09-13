@@ -71,7 +71,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.Project
 import com.example.repository.CatrobatFileManager
-import com.example.repository.MqttConfigRepository
 import com.example.ui.dialogs.NewProjectDialog
 import com.example.ui.theme.PocketAccentAmber
 import com.example.ui.theme.PocketTealDark
@@ -90,12 +89,10 @@ fun ProjectsListScreen(
   onOpenMqttConfig: (() -> Unit)? = null
 ) {
   val context = LocalContext.current
-  val mqttRepository = remember { MqttConfigRepository.getInstance(context) }
   var showNewDialog by remember { mutableStateOf(false) }
-  var mainTab by remember { mutableIntStateOf(0) } // 0: Projects, 1: Diagnostics/Logs, 2: MQTT Broker, 3: Credits
+  var mainTab by remember { mutableIntStateOf(0) } // 0: Projects, 1: Credits
   var projectFilterTab by remember { mutableIntStateOf(0) } // 0: All, 1: Featured, 2: My Projects
   var searchQuery by remember { mutableStateOf("") }
-  var selectedProjectForDiagnostics by remember { mutableStateOf<Project?>(projects.firstOrNull()) }
 
   val filteredProjects = projects.filter {
     (searchQuery.isBlank() || it.title.contains(searchQuery, ignoreCase = true) || it.description.contains(searchQuery, ignoreCase = true)) &&
@@ -142,14 +139,6 @@ fun ProjectsListScreen(
           }
         },
         actions = {
-          // MQTT Broker Configuration Action
-          IconButton(
-            onClick = { onOpenMqttConfig?.invoke() ?: run { mainTab = 2 } },
-            modifier = Modifier.testTag("main_open_mqtt_config_button")
-          ) {
-            Icon(Icons.Default.Hub, contentDescription = "MQTT Broker Setup", tint = Color.White)
-          }
-
           // Import Demo/PCP project action
           IconButton(
             onClick = {
@@ -196,7 +185,7 @@ fun ProjectsListScreen(
         .fillMaxSize()
         .padding(innerPadding)
     ) {
-      // Primary Navigation Tabs: Projects, Diagnostics, Credits
+      // Primary Navigation Tabs: Projects, Credits
       TabRow(
         selectedTabIndex = mainTab,
         containerColor = MaterialTheme.colorScheme.surface,
@@ -216,36 +205,7 @@ fun ProjectsListScreen(
         )
         Tab(
           selected = mainTab == 1,
-          onClick = {
-            mainTab = 1
-            if (selectedProjectForDiagnostics == null) {
-              selectedProjectForDiagnostics = projects.firstOrNull()
-            }
-          },
-          text = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Icon(Icons.Default.Terminal, contentDescription = null, modifier = Modifier.size(16.dp))
-              Spacer(modifier = Modifier.width(6.dp))
-              Text("Log Tab", fontWeight = FontWeight.Bold)
-            }
-          },
-          modifier = Modifier.testTag("nav_tab_diagnostics")
-        )
-        Tab(
-          selected = mainTab == 2,
-          onClick = { mainTab = 2 },
-          text = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Icon(Icons.Default.Hub, contentDescription = null, modifier = Modifier.size(16.dp))
-              Spacer(modifier = Modifier.width(6.dp))
-              Text("MQTT Broker", fontWeight = FontWeight.Bold)
-            }
-          },
-          modifier = Modifier.testTag("nav_tab_mqtt")
-        )
-        Tab(
-          selected = mainTab == 3,
-          onClick = { mainTab = 3 },
+          onClick = { mainTab = 1 },
           text = {
             Row(verticalAlignment = Alignment.CenterVertically) {
               Icon(Icons.Default.Favorite, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -274,55 +234,6 @@ fun ProjectsListScreen(
           )
         }
         1 -> {
-          // Global Diagnostic Logs Tab
-          val projToInspect = selectedProjectForDiagnostics ?: projects.firstOrNull()
-          if (projToInspect != null) {
-            Column(modifier = Modifier.fillMaxSize()) {
-              // Project selector bar for diagnostics
-              if (projects.size > 1) {
-                Surface(
-                  color = MaterialTheme.colorScheme.surfaceVariant,
-                  modifier = Modifier.fillMaxWidth()
-                ) {
-                  Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
-                  ) {
-                    Text(
-                      text = "Analyzing Project:",
-                      fontSize = 12.sp,
-                      fontWeight = FontWeight.Bold,
-                      color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                      text = projToInspect.title,
-                      fontSize = 13.sp,
-                      fontWeight = FontWeight.ExtraBold,
-                      color = MaterialTheme.colorScheme.primary
-                    )
-                  }
-                }
-              }
-              DiagnosticsLogView(
-                project = projToInspect,
-                onOpenMqttConfig = { onOpenMqttConfig?.invoke() ?: run { mainTab = 2 } }
-              )
-            }
-          } else {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-              Text("No projects available to analyze.")
-            }
-          }
-        }
-        2 -> {
-          // MQTT Broker Configuration Tab
-          MqttConfigScreen(
-            repository = mqttRepository,
-            onBack = { mainTab = 0 }
-          )
-        }
-        3 -> {
           // Giant Credits Tab
           CreditsScreen()
         }

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.IntegrationInstructions
 import androidx.compose.material.icons.filled.PlayArrow
@@ -66,9 +67,11 @@ fun ProjectOverviewScreen(
   onOpenObject: (String) -> Unit,
   onPlay: () -> Unit,
   onAddObject: (name: String, emoji: String) -> Unit,
-  onDeleteObject: (String) -> Unit
+  onDeleteObject: (String) -> Unit,
+  onOpenMqttConfig: () -> Unit = {}
 ) {
   var showAddDialog by remember { mutableStateOf(false) }
+  var mainTab by remember { mutableStateOf(0) } // 0: Objects, 1: Log Tab
 
   Scaffold(
     topBar = {
@@ -98,6 +101,12 @@ fun ProjectOverviewScreen(
           }
         },
         actions = {
+          IconButton(
+            onClick = onOpenMqttConfig,
+            modifier = Modifier.testTag("open_mqtt_config_button")
+          ) {
+            Icon(Icons.Default.Hub, contentDescription = "MQTT Broker Setup", tint = Color.White)
+          }
           IconButton(onClick = onPlay, modifier = Modifier.testTag("top_bar_play_button")) {
             Box(
               modifier = Modifier
@@ -133,86 +142,127 @@ fun ProjectOverviewScreen(
       modifier = Modifier
         .fillMaxSize()
         .padding(innerPadding)
-        .padding(14.dp)
     ) {
-      // Scene Info Card
-      Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(10.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+      androidx.compose.material3.TabRow(
+        selectedTabIndex = mainTab,
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.primary
       ) {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(12.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-          Column {
-            Text(
-              text = "Scene Stage",
-              fontWeight = FontWeight.Bold,
-              fontSize = 14.sp,
-              color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-              text = "Coordinate bounds: X(-160..+160), Y(-280..+280)",
-              fontSize = 11.sp,
-              color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        androidx.compose.material3.Tab(
+          selected = mainTab == 0,
+          onClick = { mainTab = 0 },
+          text = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(16.dp))
+              Spacer(modifier = Modifier.width(6.dp))
+              Text("Actors (${project.objects.size})", fontWeight = FontWeight.Bold)
+            }
           }
-          Surface(
-            color = MaterialTheme.colorScheme.primaryContainer,
-            shape = RoundedCornerShape(6.dp)
-          ) {
-            Text(
-              text = "Variables: ${project.variables.keys.joinToString(", ")}",
-              color = MaterialTheme.colorScheme.onPrimaryContainer,
-              fontSize = 11.sp,
-              modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-              fontWeight = FontWeight.Medium
-            )
+        )
+        androidx.compose.material3.Tab(
+          selected = mainTab == 1,
+          onClick = { mainTab = 1 },
+          text = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Icon(Icons.Default.GraphicEq, contentDescription = null, modifier = Modifier.size(16.dp))
+              Spacer(modifier = Modifier.width(6.dp))
+              Text("Log Tab", fontWeight = FontWeight.Bold)
+            }
           }
-        }
+        )
       }
 
-      Spacer(modifier = Modifier.height(14.dp))
-
-      Text(
-        text = "Actors & Objects",
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold
-      )
-      Spacer(modifier = Modifier.height(8.dp))
-
-      if (project.objects.isEmpty()) {
-        Box(
+      if (mainTab == 0) {
+        Column(
           modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f),
-          contentAlignment = Alignment.Center
+            .fillMaxSize()
+            .padding(14.dp)
         ) {
+          // Scene Info Card
+          Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+          ) {
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+              Column {
+                Text(
+                  text = "Scene Stage",
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 14.sp,
+                  color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                  text = "Coordinate bounds: X(-160..+160), Y(-280..+280)",
+                  fontSize = 11.sp,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+              }
+              Surface(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = RoundedCornerShape(6.dp)
+              ) {
+                Text(
+                  text = "Variables: ${project.variables.keys.joinToString(", ")}",
+                  color = MaterialTheme.colorScheme.onPrimaryContainer,
+                  fontSize = 11.sp,
+                  modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                  fontWeight = FontWeight.Medium
+                )
+              }
+            }
+          }
+
+          Spacer(modifier = Modifier.height(14.dp))
+
           Text(
-            text = "No actors yet. Tap + Add Actor below to add a sprite!",
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            text = "Actors & Objects",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
           )
+          Spacer(modifier = Modifier.height(8.dp))
+
+          if (project.objects.isEmpty()) {
+            Box(
+              modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+              contentAlignment = Alignment.Center
+            ) {
+              Text(
+                text = "No actors yet. Tap + Add Actor below to add a sprite!",
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+              )
+            }
+          } else {
+            LazyColumn(
+              modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+              verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+              items(project.objects) { obj ->
+                ActorItemCard(
+                  actor = obj,
+                  onClick = { onOpenObject(obj.id) },
+                  onDelete = { onDeleteObject(obj.id) }
+                )
+              }
+              item { Spacer(modifier = Modifier.height(60.dp)) }
+            }
+          }
         }
       } else {
-        LazyColumn(
-          modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f),
-          verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-          items(project.objects) { obj ->
-            ActorItemCard(
-              actor = obj,
-              onClick = { onOpenObject(obj.id) },
-              onDelete = { onDeleteObject(obj.id) }
-            )
-          }
-          item { Spacer(modifier = Modifier.height(60.dp)) }
-        }
+        DiagnosticsLogView(
+          project = project,
+          onOpenMqttConfig = onOpenMqttConfig
+        )
       }
     }
   }
